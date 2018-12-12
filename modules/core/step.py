@@ -46,27 +46,45 @@ class KettleAPI(NotificationAPI):
 
     def set_target_temp(self, temp, id=None):
         temp = float(temp)
-
         try:
             if id is None:
                 self.api.emit_event("SET_TARGET_TEMP", id=self.kettle_id, temp=temp)
             else:
                 self.api.emit_event("SET_TARGET_TEMP", id=id, temp=temp)
         except Exception as e:
+            self.notify("Failed to set Target Temp", "", type="warning")
 
-            self.notify("Faild to set Target Temp", "", type="warning")
+    def kettle_heater_on(self, id=None, power=100):
+        try:
+            id = int(id)
+            if id is None:
+                id = self.kettle_id
+            k = self.api.cache.get("kettle").get(id)
+            if k.heater is not None:
+                self.actor_on(power, int(k.heater))
+        except Exception as e:
+            self.notify("Failed to start kettle actor", "", type="warning")
+
+    @cbpi.try_catch(None)
+    def kettle_heater_off(self):
+        k = self.api.cache.get("kettle").get(self.kettle_id)
+        if k.heater is not None:
+            self.actor_off(int(k.heater))
+
 
 class Timer(object):
     timer_end = Property.Number("TIMER_END", configurable=False)
     stopwatch_started = Property.Number("STOPWATCH_START", configurable=False)
 
     def start_stopwatch(self):
+        #cbpi.app.logger.info("Stopwatch: Start")
         if self.stopwatch_started is not None:
             return
         self.stopwatch_started = time.time()
-#        cbpi.app.logger.info("Stopwatch: Started %s" % str(self.stopwatch_started))
+        cbpi.app.logger.info("Stopwatch: Started %s" % str(self.stopwatch_started))
 
     def stop_stopwatch(self):
+        #cbpi.app.logger.info("Stopwatch: Stop")
         if self.stopwatch_started is not None:
             end_time = time.time()
             elapsed_time = str(end_time - self.stopwatch_started)
@@ -77,7 +95,7 @@ class Timer(object):
             return 0
 
     def is_stopwatch_running(self):
-#        cbpi.app.logger.info("Stopwatch: Running")
+        #cbpi.app.logger.info("Stopwatch: Running")
         if self.stopwatch_started is not None:
             return True
         else:

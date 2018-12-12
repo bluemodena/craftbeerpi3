@@ -57,6 +57,7 @@ class MashStep(StepBase):
 
         # Check if timer finished and go to next step
         if self.is_timer_finished() == True:
+#            self.notify("%s Finished!" % self.name, "Please press the next button when ready to continue", timeout=None)
             self.notify("Mash Step Completed!", "Starting the next step", timeout=None)
             self.next()
 
@@ -84,18 +85,14 @@ class MashInStep(StepBase):
         self.s = False
         self.set_target_temp(self.temp, self.kettle)
 
-
-
     def execute(self):
         '''
         This method is execute in an interval
         :return:
         '''
-
         # Check if Target Temp is reached
         if self.get_kettle_temp(self.kettle) >= float(self.temp) and self.s is False:
             self.s = True
-            #DBK_added self.actor_off(1)
             self.notify("Step Temp Reached!", "Please press the next button to continue", timeout=None)
 
 
@@ -113,36 +110,56 @@ class ChilStep(StepBase):
     def reset(self):
         self.stop_timer()
 
-
     def finish(self):
         pass
 
     def execute(self):
         if self.is_timer_finished() is None:
             self.start_timer(int(self.timer) * 60)
-
         if self.is_timer_finished() == True:
             self.next()
+
 
 @cbpi.step
 class PumpStep(StepBase):
 
     pump = StepProperty.Actor("Pump", description="Pump actor gets toogled")
-    timer = Property.Number("Timer in Minutes", configurable=True, default_value=0, description="Timer is started immediately")
-
-    @cbpi.action("Start Timer")
-    def start(self):
-        if self.is_timer_finished() is None:
-            self.start_timer(int(self.timer) * 60)
-        #self.start_stopwatch()
-
+    
     def reset(self):
-        self.stop_timer()
-        #self.stop_stopwatch()
+        pass
 
     def finish(self):
         self.actor_off(int(self.pump))
-        #self.stop_stopwatch()
+        step_text = "%s Finished" % (self.name)
+        # Check if Stopwatch is Running
+        if self.is_stopwatch_running():
+            elapsedTime = time.strftime('%H:%M:%S', time.gmtime(float(self.stop_stopwatch())))
+            step_text = "%s Finished in %s" % (self.name, elapsedTime)
+        self.notify(step_text, "Please press the next button when ready to continue", timeout=None)
+
+    def init(self):
+        self.actor_on(int(self.pump))
+        self.start_stopwatch()
+
+
+@cbpi.step
+class TimedPumpStep(StepBase):
+
+    pump = StepProperty.Actor("Pump", description="Pump actor gets toogled")
+    timer = Property.Number("Timer in Minutes", configurable=True, default_value=0, description="Timer is started immediately.")
+    s = False
+
+    @cbpi.action("Start Timer")
+    def start(self):
+        #self.actor_on(int(self.pump))
+        if self.is_timer_finished() is None:
+            self.start_timer(int(self.timer) * 60)
+
+    def reset(self):
+        self.stop_timer()
+
+    def finish(self):
+        self.actor_off(int(self.pump))
 
     def init(self):
         self.actor_on(int(self.pump))
@@ -150,9 +167,12 @@ class PumpStep(StepBase):
     def execute(self):
         if self.is_timer_finished() is None:
             self.start_timer(int(self.timer) * 60)
+        if self.is_timer_finished() and self.s is False:
+            self.s = True
+            self.actor_off(int(self.pump))
+            self.notify("%s Finished!" % self.name, "Please press the next button when ready to continue", timeout=None)
+            #self.next_step()
 
-        if self.is_timer_finished() == True:
-            self.next()
 
 @cbpi.step
 class BoilStep(StepBase):
@@ -182,9 +202,6 @@ class BoilStep(StepBase):
         # set target tep
         self.set_target_temp(self.temp, self.kettle)
 
-
-
-
     @cbpi.action("Start Timer Now")
     def start(self):
         '''
@@ -202,9 +219,7 @@ class BoilStep(StepBase):
     def finish(self):
         self.set_target_temp(0, self.kettle)
 
-
     def check_hop_timer(self, number, value):
-
         if self.__getattribute__("hop_%s_added" % number) is not True and time.time() > (
             self.timer_end - (int(self.timer) * 60 - int(value) * 60)):
             self.__setattr__("hop_%s_added" % number, True)

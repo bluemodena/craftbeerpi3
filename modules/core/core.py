@@ -456,7 +456,7 @@ class CraftBeerPi(ActorAPI, SensorAPI):
             value = self.cache.get("kettle").get(id)
             value["state"] = False
         except:
-            self.notify("Kettle Setup Faild", "Please check %s configuration" % value.name, type="danger", timeout=None)
+            self.notify("Kettle Setup Failed", "Please check %s configuration" % value.name, type="danger", timeout=None)
             self.app.logger.error("Initializing of Kettle %s failed" % id)
 
 

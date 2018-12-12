@@ -22,6 +22,8 @@ show_menu () {
    "10" "Reboot Raspberry Pi" \
    "11" "Stop CraftBeerPi, Clear logs, Start CraftBeerPi" 3>&1 1>&2 2>&3)
 
+   #"10" "Clear all logs and Reboot Raspberry Pi" 3>&1 1>&2 2>&3 
+   
    BUTTON=$?
    # Exit if user pressed cancel or escape
    if [[ ($BUTTON -eq 1) || ($BUTTON -eq 255) ]]; then
@@ -139,6 +141,8 @@ show_menu () {
         10)
             confirmAnswer "Are you sure you want to reboot the Raspberry Pi?"
             if [ $? = 0 ]; then
+              sudo /etc/init.d/craftbeerpiboot stop
+              sudo rm -rf logs/*.log
               sudo reboot
             else
               show_menu
@@ -158,6 +162,17 @@ show_menu () {
        esac
    fi
 }
+
+#        10)
+#            confirmAnswer "Are you sure you want to delete all log files and reboot the Raspberry Pi?"
+#            if [ $? = 0 ]; then
+#              sudo /etc/init.d/craftbeerpiboot stop
+#              sudo rm -rf logs/*.log
+#              sudo reboot
+#            else
+#              show_menu
+#            fi
+#            ;;
 
 if [ "$EUID" -ne 0 ]
   then whiptail --title "Please run as super user (sudo)" --msgbox "Please run the install file -> sudo install.sh " 8 78

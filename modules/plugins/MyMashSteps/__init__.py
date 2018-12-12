@@ -28,7 +28,7 @@ class MyMashStep(StepBase):
 
         #Start heating the sparge water
         self.set_target_temp(self.spargetemp, self.hlt)
-        self.actor_on(1)
+        self.actor_on(int(self.hlt))
         self.start_stopwatch()
         self.s = False
 
@@ -50,7 +50,7 @@ class MyMashStep(StepBase):
     def finish(self):
         self.stop_timer()
         self.set_target_temp(self.spargetemp, self.hlt)
-        self.actor_off(1)
+        self.actor_off(int(self.hlt))
         self.stop_stopwatch()
 
     def execute(self):
@@ -60,7 +60,7 @@ class MyMashStep(StepBase):
         '''
         # Check if Target Sparge Temp is reached
         if self.get_kettle_temp(self.hlt) >= float(self.spargetemp):
-#            self.actor_off(1)
+#            self.actor_off(int(self.hlt))
             #Send notification... ONCE
             if self.s is False:
                 cbpi.app.logger.info('MyMashStep: sparge temp reached')
@@ -72,7 +72,7 @@ class MyMashStep(StepBase):
                     notifyHeader = "Sparge Water Temp Reached in %s!" % (elapsedTime)
                 self.notify(notifyHeader, "Maintaining temp", timeout=None)
 #        else:
-#            self.actor_on(1)
+#            self.actor_on(int(self.hlt))
 
         # Check if Target Mash Temp is reached
         if self.get_kettle_temp(self.mashtun) >= int(self.mashtemp):
@@ -82,17 +82,18 @@ class MyMashStep(StepBase):
 
         # Check if timer finished and go to next step
         if self.is_timer_finished() == True:
-            self.notify("Mash Step Completed!", "Starting the next step", timeout=None)
+            self.notify("%s Finished!" % self.name, "Starting the next step", timeout=None)
             self.next()
 
+
 @cbpi.step
-class StrikeWater(StepBase):
+class HeatStep(StepBase):
     '''
     Just put the decorator @cbpi.step on top of a method. The class name must be unique in the system
     '''
     # Properties
-    temp = Property.Number("Temperature", configurable=True,  description="Target Temperature of Strike Water")
-    kettle = StepProperty.Kettle("Kettle", description="Kettle in which the the strike water is heated")
+    kettle = StepProperty.Kettle("Kettle", description="Kettle in which to heat")
+    temp = Property.Number("Temperature", configurable=True, description="Target Temperature")
     s = False
 
     def init(self):
@@ -100,32 +101,23 @@ class StrikeWater(StepBase):
         Initialize Step. This method is called once at the beginning of the step
         :return:
         '''
-        cbpi.app.logger.info('StrikeWater: init')
-
+        cbpi.app.logger.info('HeatStep: init')
         # set target step
         self.s = False
-        self.set_target_temp(self.temp, self.kettle)
-
-        #Start heating the strike water
-        self.actor_on(1)
-
+        self.set_target_temp(self.temp, int(self.kettle))
+#        #Start heating the strike water
+#        self.kettle_heater_on(int(self.kettle), 100)
+        #Start stopwatch
         self.start_stopwatch()
 
-    @cbpi.action("Change Power")
-    def change_power(self):
-        self.actor_power(1, 100)
-    
     def reset(self):
-        cbpi.app.logger.info('StrikeWater: reset')
-        self.set_target_temp(self.temp, self.kettle)
-        self.stop_stopwatch()
-        self.actor_off(1)
+        pass
 
     def finish(self):
-        cbpi.app.logger.info('StrikeWater: finish')
-        self.set_target_temp(0, self.kettle)
+        cbpi.app.logger.info('HeatStep: finish')
+        self.set_target_temp(0, int(self.kettle))
+#        self.kettle_heater_off(int(self.kettle))
         self.stop_stopwatch()
-        self.actor_off(1)
 
     def execute(self):
         '''
@@ -134,81 +126,39 @@ class StrikeWater(StepBase):
         '''
         # Check if Target Temp is reached
         if self.get_kettle_temp(self.kettle) >= float(self.temp):
-#            self.actor_off(1)
             #Send notification... ONCE 
             if self.s is False:
-                cbpi.app.logger.info('StrikeWater: Execute strike temp reached')
+                cbpi.app.logger.info('HeatStep: Execute %s Temp Reached' % self.name)
                 self.s = True
                 # Check if Stopwatch is Running
-                notifyHeader = "Strike Water Temp Reached!"
+                notifyHeader = "%s Temp Reached!" % self.name
                 if self.is_stopwatch_running():
                     elapsedTime = time.strftime('%H:%M:%S', time.gmtime(float(self.stop_stopwatch())))
-                    notifyHeader = "Strike Water Temp Reached in %s!" % (elapsedTime)
+                    notifyHeader = "%s Temp Reached in %s seconds!" % (self.name, elapsedTime)
                 self.notify(notifyHeader, "Maintaining temp; Please press the next button when ready to continue", timeout=None)
-#        else:
-#            self.actor_on(1)
+
 
 @cbpi.step
-class SpargeStep(StepBase):
+class NonBrewStep(StepBase):
     '''
     Just put the decorator @cbpi.step on top of a method. The class name must be unique in the system
     '''
-    # Properties
-    temp = Property.Number("Temperature", configurable=True,  description="Target Temperature of Sprage Water")
-    kettle = StepProperty.Kettle("Kettle", description="Kettle in which the the sparge water is heated")
-    s = False
 
     def init(self):
         '''
         Initialize Step. This method is called once at the beginning of the step
         :return:
         '''
-        cbpi.app.logger.info('SpargeStep: init')
-
-        # set target step
-        self.s = False
-        self.set_target_temp(self.temp, self.kettle)
-
-        #Start heating the sparge water
-        self.actor_on(1)
-
         self.start_stopwatch()
 
-    @cbpi.action("Change Power")
-    def change_power(self):
-        self.actor_power(1, 100)
-    
     def reset(self):
-        cbpi.app.logger.info('SpargeStep: reset')
-        self.set_target_temp(self.temp, self.kettle)
         self.stop_stopwatch()
-        self.actor_off(1)
 
     def finish(self):
-        cbpi.app.logger.info('SpargeStep: finish')
-        self.set_target_temp(0, self.kettle)
-        self.stop_stopwatch()
-        self.actor_off(1)
-
-    def execute(self):
-        '''
-        This method is execute in an interval
-        :return: 
-        '''
-        # Check if Target Temp is reached
-        if self.get_kettle_temp(self.kettle) >= float(self.temp):
-            self.actor_off(1)
-            #Send notification... ONCE 
-            if self.s is False:
-                cbpi.app.logger.info('SpargeStep: Execute sparge temp reached')
-                self.s = True
-                # Check if Stopwatch is Running
-                notifyHeader = "Sparge Water Temp Reached!"
-                if self.is_stopwatch_running():
-                    elapsedTime = time.strftime('%H:%M:%S', time.gmtime(float(self.stop_stopwatch()))) 
-                    notifyHeader = "Sprage Water Temp Reached in %s!" % (elapsedTime)
-                self.notify(notifyHeader, "Maintaining temp; Please press the next button when ready to continue", timeout=None)
-        else:
-            self.actor_on(1)
-
+        step_text = "%s Finished" % (self.name)
+        # Check if Stopwatch is Running
+        if self.is_stopwatch_running():
+            elapsedTime = time.strftime('%H:%M:%S', time.gmtime(float(self.stop_stopwatch())))
+            step_text = "%s Finished in %s" % (self.name, elapsedTime)
+        self.notify(step_text, "Please press the next button when ready to continue", timeout=None)
 
