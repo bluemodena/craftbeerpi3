@@ -89,8 +89,12 @@ class ONE_WIRE_SENSOR(SensorPassive):
     def read(self):
         if self.get_config_parameter("unit", "C") == "C":
             self.data_received(round(self.t.value + self.offset_value(), 2))
+            #Uncomment to change one wire temp precision 2 -> 1 decimal place
+            #self.data_received(round(self.t.value + self.offset_value(), 1))
         else:
             self.data_received(round(9.0 / 5.0 * self.t.value + 32 + self.offset_value(), 2))
+            #Uncomment to change one wire temp precision 2 -> 1 decimal place
+            #self.data_received(round(9.0 / 5.0 * self.t.value + 32 + self.offset_value(), 1))
 
     @cbpi.try_catch(0)
     def offset_value(self):

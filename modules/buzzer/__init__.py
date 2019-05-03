@@ -15,6 +15,7 @@ class Buzzer(object):
             cbpi.app.logger.info("INIT BUZZER NOW GPIO%s" % gpio)
             self.gpio = int(gpio)
             self.beep_level = beep_level
+            GPIO.setwarnings(False)
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.gpio, GPIO.OUT)
             self.state = True

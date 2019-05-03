@@ -9,6 +9,7 @@ try:
     import RPi.GPIO as GPIO
 
     GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
 except Exception as e:
     print e
     pass
