@@ -265,13 +265,13 @@ class CraftBeerPi(ActorAPI, SensorAPI):
             if self.cache.get("config") is not None:
                 self.cache.get("config")[c.name] = c
 
-    def delete_config_parameter(self, name, value, type, description, options=None):
-        from modules.config import Config
-        with self.app.app_context():
-            c = Config.insert(**{"name":name, "value": value, "type": type, "description": description, "options": options})
-            if self.cache.get("config") is not None:
-                self.cache.get("config")[c.name] = c
-
+#    def delete_config_parameter(self, name, value, type, description, options=None):
+#        from modules.config import Config
+#        with self.app.app_context():
+#            c = Config.insert(**{"name":name, "value": value, "type": type, "description": description, "options": options})
+#            if self.cache.get("config") is not None:
+#                self.cache.get("config")[c.name] = c
+#
     def clear_cache(self, key, is_array=False):
         if is_array:
             self.cache[key] = []
